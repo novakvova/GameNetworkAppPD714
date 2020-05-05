@@ -28,6 +28,8 @@ public class SlingShot : MonoBehaviour
             return S.launchPos;
         }
     }
+
+    private bool isFire = true;
     //*********************************************
     public Material Material_In;
     private int i = 0;
@@ -79,7 +81,7 @@ public class SlingShot : MonoBehaviour
 
             MissionDemolition.ShotFired(); // a
             ProjectileLine.S.poi = projectile;
-
+            isFire = true;
             Invoke("GetRequest", 1f);
         }
 
@@ -106,34 +108,38 @@ public class SlingShot : MonoBehaviour
         launchPoint.SetActive(false); //    
     }
     void OnMouseDown()
-    { // d
-      // Игрок нажал кнопку мыши, когда указатель находился над рогаткой
-        aimingMode = true;
-        // Создать снаряд
-        projectile = Instantiate(prefabProjectile) as GameObject;
-        //List<Component> hingeJoints = new List<Component>();
-        //projectile.GetComponents(typeof(GameObject), hingeJoints);
-        //Debug.Log(hingeJoints.ToString());
-
-        //******************************************************************************
-
-        if (i >= materials.Length)
+    {
+        if (isFire)
         {
-            i = 0;
+            // d
+            // Игрок нажал кнопку мыши, когда указатель находился над рогаткой
+            aimingMode = true;
+            // Создать снаряд
+            projectile = Instantiate(prefabProjectile) as GameObject;
+            //List<Component> hingeJoints = new List<Component>();
+            //projectile.GetComponents(typeof(GameObject), hingeJoints);
+            //Debug.Log(hingeJoints.ToString());
+
+            //******************************************************************************
+
+            if (i >= materials.Length)
+            {
+                i = 0;
+            }
+            Material[] mats = projectile.GetComponent<Renderer>().materials;
+            mats[0] = materials[i];
+            projectile.GetComponent<Renderer>().materials = mats;
+            i++;
+
+            //******************************************************************************
+
+            // Поместить в точку launchPoint
+            projectile.transform.position = launchPos;
+            // Сделать его кинематическим
+            projectile.GetComponent<Rigidbody>().isKinematic = true;
+            projectileRigidbody = projectile.GetComponent<Rigidbody>();
+            projectileRigidbody.isKinematic = true;
         }
-        Material[] mats = projectile.GetComponent<Renderer>().materials;
-        mats[0] = materials[i];
-        projectile.GetComponent<Renderer>().materials = mats;
-        i++;
-
-        //******************************************************************************
-
-        // Поместить в точку launchPoint
-        projectile.transform.position = launchPos;
-        // Сделать его кинематическим
-        projectile.GetComponent<Rigidbody>().isKinematic = true;
-        projectileRigidbody = projectile.GetComponent<Rigidbody>();
-        projectileRigidbody.isKinematic = true;
     }
 
 
@@ -144,7 +150,6 @@ public class SlingShot : MonoBehaviour
         {
 
         }
-
 
         if (!aimingMode) return;
         Vector3 mousePos2D = Input.mousePosition; // с
@@ -168,11 +173,13 @@ public class SlingShot : MonoBehaviour
             projectileRigidbody.velocity = -mouseDelta * velocityMult;
             FollowCam.POI = projectile;
             Network.PostData("vova", projPos, projectileRigidbody.velocity);
+            isFire = false;
             projectile = null;
 
             MissionDemolition.ShotFired(); // a
             ProjectileLine.S.poi = projectile;
         }
+
     }
 }
 
@@ -180,7 +187,7 @@ public class Network
 {
     public static Solider GetData(string nick)
     {
-        string url = string.Format("http://40.127.228.88/api/game/{0}", nick);
+        string url = string.Format("http://40.127.228.172/api/game/{0}", nick);
         HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
         request.Method = "GET";
         var webResponse = request.GetResponse();
@@ -195,7 +202,7 @@ public class Network
 
     public static void PostData(string nick, Vector3 pos, Vector3 velocity)
     {
-        var httpWebRequest = (HttpWebRequest)WebRequest.Create("http://40.127.228.88/api/game");
+        var httpWebRequest = (HttpWebRequest)WebRequest.Create("http://40.127.228.172/api/game");
         httpWebRequest.ContentType = "application/json";
         httpWebRequest.Method = "POST";
         using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
