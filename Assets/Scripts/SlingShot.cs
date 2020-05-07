@@ -13,6 +13,13 @@ public class SlingShot : MonoBehaviour
     public GameObject prefabProjectile;
     public Material[] materials;
     public float velocityMult = 8f;
+
+    public float request_server = 0.5f;
+    public string playr_1 = "john";
+    public string playr_2 = "peter";
+    public string ip = "40.127.228.172";
+    public bool isFire = true;
+
     [Header("Set Dynamically")]
 
     public GameObject launchPoint;
@@ -29,7 +36,7 @@ public class SlingShot : MonoBehaviour
         }
     }
 
-    private bool isFire = true;
+    
     //*********************************************
     public Material Material_In;
     private int i = 0;
@@ -37,16 +44,16 @@ public class SlingShot : MonoBehaviour
 
     void Start()
     {
-        Invoke("GetRequest", 2f);
+        Invoke("GetRequest", 0.1f);
     }
 
     void GetRequest()
     {
         // PositionCollider positionCollider = Network.GetData().Result;
-        var pc = Network.GetData("dima");
+        var pc = Network.GetData(playr_1, ip);
         if (pc == null)
         {
-            Invoke("GetRequest", 1f);
+            Invoke("GetRequest", request_server);
         }
         else
         {
@@ -82,7 +89,7 @@ public class SlingShot : MonoBehaviour
             MissionDemolition.ShotFired(); // a
             ProjectileLine.S.poi = projectile;
             isFire = true;
-            Invoke("GetRequest", 1f);
+            Invoke("GetRequest", request_server);
         }
 
     }
@@ -172,7 +179,7 @@ public class SlingShot : MonoBehaviour
             projectileRigidbody.isKinematic = false;
             projectileRigidbody.velocity = -mouseDelta * velocityMult;
             FollowCam.POI = projectile;
-            Network.PostData("vova", projPos, projectileRigidbody.velocity);
+            Network.PostData(playr_2, projPos, projectileRigidbody.velocity, ip);
             isFire = false;
             projectile = null;
 
@@ -185,9 +192,9 @@ public class SlingShot : MonoBehaviour
 
 public class Network
 {
-    public static Solider GetData(string nick)
+    public static Solider GetData(string nick, string ip)
     {
-        string url = string.Format("http://40.127.228.172/api/game/{0}", nick);
+        string url = string.Format("http://{0}/api/game/{1}", ip, nick);
         HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
         request.Method = "GET";
         var webResponse = request.GetResponse();
@@ -200,9 +207,9 @@ public class Network
 
     }
 
-    public static void PostData(string nick, Vector3 pos, Vector3 velocity)
+    public static void PostData(string nick, Vector3 pos, Vector3 velocity, string ip)
     {
-        var httpWebRequest = (HttpWebRequest)WebRequest.Create("http://40.127.228.172/api/game");
+        var httpWebRequest = (HttpWebRequest)WebRequest.Create("http://"+ip+"/api/game");
         httpWebRequest.ContentType = "application/json";
         httpWebRequest.Method = "POST";
         using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
